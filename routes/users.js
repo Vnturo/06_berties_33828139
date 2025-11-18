@@ -9,7 +9,7 @@ router.get('/register', function (req, res, next) {
 
 router.post('/registered', function (req, res, next) {
     const saltRounds = 10
-    const plainPassword = req.body.password;
+    const plainPassword = req.body.password
 
         // Hashing the password
     bcrypt.hash(plainPassword, saltRounds, function(err, hashedPassword) {

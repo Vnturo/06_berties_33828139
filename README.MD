@@ -93,3 +93,16 @@ The following routes are available:
 *  `insert_test_data.sql`: SQL script to populate the `books` table with 3 initial records.
 *  `package.json`: Lists project dependencies (Express, EJS, mysql2).
 * `.gitignore`: Instructs Git to ignore the `node_modules` folder.
+
+## DOTENV Application
+The database connection code in `index.js` was modified to remove hardcoded credentials (like the password) to mitigate the security risk of storing sensitive information in a public GitHub repository .
+
+This feature was implemented using the dotenv node.js module  via the following steps:
+
+Installation: The dotenv module was installed as a project dependency.
+
+Configuration File: A new file named .env was created in the root directory to store the database access details (e.g., DB_USER, DB_PASSWORD) as environment variables.
+
+Security: The `.env` file was added to the `.gitignore` file to ensure these secrets are never tracked or pushed to GitHub.
+
+Application Integration: The `index.js` file was updated to include `require('dotenv').config()` at the top. The hardcoded connection strings within the `mysql.createPool` object were replaced with calls to `process.env` (e.g., `user: process.env.DB_USER`) , allowing the application to securely load the credentials at runtime.

@@ -9,7 +9,7 @@ router.get('/register', function (req, res, next) {
 
 router.post('/registered', function (req, res, next) {
     const saltRounds = 10
-    const plainPassword = req.body.password
+    const plainPassword = req.body.password;
 
         // Hashing the password
     bcrypt.hash(plainPassword, saltRounds, function(err, hashedPassword) {
@@ -64,17 +64,35 @@ router.post('/loggedin', function (req, res, next) {
             return res.send('User not found')
         }
         const hashedPassword = results[0].hashedPassword
-        bcrypt.compare(plainPassword, hashedPassword, function(err, result) {
-            if (err) {
-                return next(err)
-            }
-            if (result) {
-                res.send('Login successful! Welcome ' + results[0].first_name)
+        bcrypt.compare(plainPassword, hashedPassword, function(err, compareResult) {
+            
+            if (compareResult == true) {
+                // Insert audit log entry
+                let auditQuery = "INSERT INTO audit_log (username, action) VALUES (?, 'SUCCESSFUL_LOGIN')";
+                db.query(auditQuery, [username], (auditErr, auditRes) => {
+                    // Log the success message after audit log is inserted
+                    res.send("Login successful! Welcome " + results[0].first_name); 
+                });
             } else {
-                res.send('Incorrect password')
+                // Insert audit log entry
+                let auditQuery = "INSERT INTO audit_log (username, action) VALUES (?, 'FAILED_LOGIN')";
+                db.query(auditQuery, [username], (auditErr, auditRes) => {
+                    // Log the failure message after audit log is inserted
+                    res.send("Login failed: Incorrect password.");
+                });
             }
-        })
-    })
+        });
+    });
+});
+
+router.get('/audit', function (req, res, next) {
+let sqlquery = "SELECT username, action, timestamp FROM audit_log ORDER BY timestamp DESC"
+    db.query(sqlquery, (err, result) => {    
+    if (err) {
+            next(err);
+        }
+        res.render("audit.ejs", { auditLogs: result });
+        });
 });
 // Export the router object so index.js can access it
 module.exports = router

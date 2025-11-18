@@ -106,3 +106,12 @@ Configuration File: A new file named .env was created in the root directory to s
 Security: The `.env` file was added to the `.gitignore` file to ensure these secrets are never tracked or pushed to GitHub.
 
 Application Integration: The `index.js` file was updated to include `require('dotenv').config()` at the top. The hardcoded connection strings within the `mysql.createPool` object were replaced with calls to `process.env` (e.g., `user: process.env.DB_USER`) , allowing the application to securely load the credentials at runtime.
+
+## Audit Log Application
+This feature was implemented to improve application security by tracking and documenting all login attempts, both successful and failed.
+
+Database Storage: A new table named `audit_log` was created in the database to store login event records, including the `username`, the action (`SUCCESSFUL_LOGIN` or `FAILED_LOGIN`), and a timestamp.
+
+Recording Mechanism: The `router.post('/loggedin')` function in `users.js` was modified to execute an `INSERT` query into the `audit_log` table within the respective success and failure callbacks of the `bcrypt.compare` function.
+
+Display Route: A new GET route, `/users/audit`, was implemented. This route executes a `SELECT` query on the `audit_log` table and passes the full history to the `audit.ejs` template for display.

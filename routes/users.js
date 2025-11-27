@@ -1,8 +1,8 @@
 // Create a new router
+const { check, validationResult } = require('express-validator');
 const express = require("express")
 const router = express.Router()
 const bcrypt = require('bcrypt')
-
 const redirectLogin = (req, res, next) => {
     if (!req.session.userId ) {
       res.redirect('../users/login') // redirect to the login page
@@ -15,34 +15,56 @@ router.get('/register', function (req, res, next) {
     res.render('register.ejs')
 })
 
-router.post('/registered', function (req, res, next) {
-    const saltRounds = 10
-    const plainPassword = req.body.password
+router.post('/registered',
+    [check('username').isLength({ min: 5, max: 20}).isAlphanumeric(),
+     check('first').notEmpty().isAlpha(),
+     check('last').notEmpty().isAlpha(),
+     check('email').isEmail(), 
+     check('password').isLength({ min: 8 })], 
+    function (req, res, next) {
+
+    const errors = validationResult(req);
+    
+    if (!errors.isEmpty()) {
+        res.render('register.ejs', { errors: errors.array() }); 
+    }
+    else {
+        const first = req.sanitize(req.body.first)
+        const last = req.sanitize(req.body.last)
+        const email = req.sanitize(req.body.email)
+        const username = req.sanitize(req.body.username)
+        
+        const saltRounds = 10
+        const plainPassword = req.body.password
 
         // Hashing the password
-    bcrypt.hash(plainPassword, saltRounds, function(err, hashedPassword) {
-        if (err) {
-            return next(err)
-        }
-
-        // Store hashed password in your database
-        let sqlquery = "INSERT INTO users (username, first_name, last_name, email, hashedPassword) VALUES (?,?,?,?,?)"
-        
-        let newrecord = [req.body.username, req.body.first, req.body.last, req.body.email, hashedPassword]
-
-        db.query(sqlquery, newrecord, (err, result) => {
+        bcrypt.hash(plainPassword, saltRounds, function(err, hashedPassword) {
             if (err) {
-                next(err)
+                return next(err)
             }
-            else {
-                let resultMsg = 'Hello '+ req.body.first + ' '+ req.body.last +' you are now registered! We will send an email to you at ' + req.body.email;
-                resultMsg += ' Your password is: '+ req.body.password +' and your hashed password is: '+ hashedPassword;
-                
-                res.send(resultMsg)
-            }
+
+            // Store hashed password in your database
+            let sqlquery = "INSERT INTO users (username, first_name, last_name, email, hashedPassword) VALUES (?,?,?,?,?)"
+            
+            let newrecord = [username, first, last, email, hashedPassword]
+
+            db.query(sqlquery, newrecord, (err, result) => {
+                if (err) {
+                    next(err)
+                }
+                else {
+                    res.render('registered.ejs', {
+                        first: first,
+                        last: last,
+                        email: email,
+                        password: req.body.password,
+                        hashedPassword: hashedPassword
+                    });
+                }
+            })
         })
-    })
-}); 
+    }
+});
 
 router.get('/list', redirectLogin, function (req, res, next) {
     // Query database to get all the users
@@ -61,34 +83,42 @@ router.get('/list', redirectLogin, function (req, res, next) {
 router.get('/login', function (req, res, next) {
     res.render('login.ejs')
 });
-router.post('/loggedin', function (req, res, next) {
-    const username = req.body.username
+router.post('/loggedin',
+    [check('username').notEmpty(),
+     check('password').notEmpty()],
+    function (req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.render('login.ejs', { error: 'Username and password are required.' });
+    }
+    
+    const username = req.sanitize(req.body.username)
     const plainPassword = req.body.password
+
     let sqlquery = "SELECT * FROM users WHERE username = ?"
     db.query(sqlquery, [username], (err, results) => {
         if (err) {
             return next(err)
         }
+        
+        // This is a generic failure response
         if (results.length === 0) {
-            return res.render('incorrectpassword.ejs');
+            return res.render('login.ejs', { error: 'Invalid username or password' });
         }
+        
         const hashedPassword = results[0].hashedPassword
         bcrypt.compare(plainPassword, hashedPassword, function(err, compareResult) {
             
             if (compareResult == true) {
-                // Insert audit log entry
-                req.session.userId = req.body.username;
+                req.session.userId = username; 
                 let auditQuery = "INSERT INTO audit_log (username, action) VALUES (?, 'SUCCESSFUL_LOGIN')";
                 db.query(auditQuery, [username], (auditErr, auditRes) => {
-                    // Log the success message after audit log is inserted
                     res.render('loggedin.ejs', { user: results[0] }); 
                 });
             } else {
-                // Insert audit log entry
                 let auditQuery = "INSERT INTO audit_log (username, action) VALUES (?, 'FAILED_LOGIN')";
                 db.query(auditQuery, [username], (auditErr, auditRes) => {
-                    // Log the failure message after audit log is inserted
-                    res.send("Login failed: Incorrect password.");
+                    res.render('login.ejs', { error: 'Invalid username or password' });
                 });
             }
         });

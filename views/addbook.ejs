@@ -3,21 +3,34 @@
     <head>
         <title>Add a New Book</title>
         <link rel="stylesheet"  type="text/css" href="/main.css" />
-
     </head>
     <body>
         <h1>Add a New Book</h1>
+
+        <% if (typeof errors !== 'undefined') { %>
+            <div style="color: red; border: 1px solid red; padding: 10px; margin-bottom: 10px;">
+                <h4>Please correct the following errors:</h4>
+                <ul>
+                    <% errors.forEach(function(error){ %>
+                        <li><%= error.msg %> (Field: <%= error.path %>)</li>
+                    <% }); %>
+                </ul>
+            </div>
+        <% } %>
+
         <form action="/books/bookadded" method="POST">
-        <p>
-            <label for="name">Book Name:</label>
-            <input type="text" id="name" name="name" required />
-        </p>
-        <p>
-            <label for="price">Price (£):</label>
-            <input type="number" id="price" name="price" step="0.01" required />
-        </p>
-        <button type="submit">Add Book</button>
+            <p>
+                <label for="name">Book Name:</label>
+                <input type="text" id="name" name="name" required />
+            </p>
+            <p>
+                <label for="price">Price (£):</label>
+                <input type="number" id="price" name="price" step="0.01" required />
+            </p>
+            <button type="submit">Add Book</button>
         </form>
+        
         <p><a href="/">Return to Home Page</a></p>
+        
     </body>
 </html>

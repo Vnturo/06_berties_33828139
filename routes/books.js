@@ -1,4 +1,5 @@
 // Create a new router
+const { check, validationResult } = require('express-validator');
 const express = require("express")
 const router = express.Router()
 const redirectLogin = (req, res, next) => {
@@ -13,8 +14,14 @@ router.get('/search', redirectLogin, function(req, res, next){
 });
 
 // Handle the search request
-router.get('/search-result', redirectLogin, function (req, res, next) {
-    let keyword = req.query.keyword;
+router.get('/search-result', redirectLogin,
+    [check('keyword').notEmpty().isLength({ max: 50 })],
+    function (req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        return res.redirect('./search'); 
+    }
+    let keyword = req.sanitize(req.query.keyword);
 
     // Change the SQL to use 'LIKE' instead of '='
     let sqlquery = "SELECT * FROM books WHERE name LIKE ?";
@@ -48,7 +55,16 @@ router.get('/addbook', redirectLogin, function (req, res, next) {
     res.render("addbook.ejs")
 });
 
-router.post('/bookadded', redirectLogin, function (req, res, next) {
+router.post('/bookadded', redirectLogin, 
+    [check('name').notEmpty(),
+     check('price').isFloat({ min: 0 })
+    ],
+    function (req, res, next) {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+        res.render('addbook.ejs', { errors: errors.array() });
+        return;
+    }
     // saving data in database
     let sqlquery = "INSERT INTO books (name, price) VALUES (?,?)"
     // execute sql query
@@ -58,7 +74,7 @@ router.post('/bookadded', redirectLogin, function (req, res, next) {
             next(err)
         }
         else
-            res.send(' This book is added to database, name: '+ req.body.name + ' price '+ req.body.price)
+            res.render('bookadded.ejs', { bookName: req.body.name });
     })
 });
 

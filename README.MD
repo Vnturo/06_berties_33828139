@@ -136,3 +136,45 @@ Access control was added to protect all data modification and viewing pages. Use
 | `/books/bargainbooks` | Displays the filtered list of books. | Yes |
 | `/books/listusers` | Displays registered usernames and emails. | Yes |
 | `/books/audit` | Displays sensitive login history. | Yes |
+
+
+# Lab 8bc
+
+## Validation
+I applied validation checks by using the `express-validator` module to make sure the data of the application becomes robust. Validation was applied to all routes that handle user-submitted data via `POST` requests.
+
+### Applied Validation Checks
+Validation has been applied to the following routes, ensuring that submitted data meets strict requirements before being processed by the application or stored in the database:
+
+| Route | Purpose | Fields Validated | Reasoning |
+| :--- | :--- | :--- | :--- |
+| `/users/registered`(POST) | User Registration | `username`,`email`,`password`,`first`,`last` | **Security/Data Integrity:** Ensures strong password (min 8 characters), valid email format, and checks for alphanumeric, non-empty, and appropriately sized names/usernames |
+| `/users/loggedin`(POST) | User Login | `username`,`password` | **Security/Efficiency:** Checks that fields are `.notEmpty()`. This prevents wasting resources on database lookups when the user has submitted blank fields. Error handling was refactored to securely use a generic failure message for all login issues.|
+| `/books/search-result`(POST) | Search Results | `keyword` | **Performance/Security:** The search term is validated to ensure it is `.notEmpty()` and `.isLength({ max: 50 })`. This prevents users from spamming the database with excessively long query strings that could degrade performance. |
+| `/books/bookadded`(POST) | Add New Book | `name`,`price` | **Data Integrity:** name must be `.notEmpty()`. price must be a `.isFloat({ min: 0 })` to ensure the value is a non-negative number suitable for currency storage. |
+
+Validation was not applied to routes that simply display data or forms, as they do not process user inputs.
+
+| Route Type | Examples | Reasoning |
+| :--- | :--- | :--- |
+| Display Routes | `/books/list`,`/users/audit`,`/users/list` | These are `GET` requests used only for retrieving and displaying data from the database. No user data is being submitted to these endpoints, so validation is unnecessary. |
+| Form Display Routes | `/books/addbook` (GET), `/users/register` (GET) | These routes simply render the HTML form. Since the `req.body` is empty, there is no user input to validate at the moment the route is accessed. The validation is correctly placed on the corresponding `POST` handlers. |
+
+## Sanitisation
+I applied sanitisation using the `express-sanitizer` module to prevent Cross-Site Scripting (XSS). This ensures that malicious scripts entered into forms are removed before the data is processed or stored in the database.
+
+Sanitisation was applied to the following text fields because this data is often displayed back to the user (e.g. "Hello [Name]" or in book lists). If a hacker injected a script here, it would execute in the browser of anyone viewing the page.
+
+| Route | Purpose | Fields Sanitised | Reasoning |
+| :--- | :--- | :--- | :--- |
+| `/users/registered`(POST) | User Registration | `username`, `email`, `first`, `last` | **Prevention of XSS:** These fields are text strings that are stored and displayed. Sanitisation removes HTML tags (like `<script>`) to prevent code injection attacks. |
+| `/users/loggedin` (POST) | User Login | `username` | **Security:** Ensures the username input is treated as plain text before being used in database queries. |
+| `/books/search-result` (GET) | Search Results | `keyword` | **XSS Prevention:** The search keyword is echoed back to the user on the results page (e.g. "Search results for..."). Sanitisation prevents reflected XSS attacks via the URL. |
+| `/books/bookadded`(POST) | Add New Book | `name` | **Data Safety:** Book titles are displayed in the main list. Sanitisation ensures no malicious code is stored in the library catalog. |
+
+Sanitation was not applied in the passwords and price or else altering the input would break functionality or security.
+
+| Field | Reason |
+| :--- | :--- |
+| `password` | **Data Integrity & Security:** Passwords must allow special characters (e.g. `!`, `@`, `&`, `<`) to be strong. Sanitising a password would remove these characters, altering the string before it is hashed. This would cause login failures and weaken password complexity rules. |
+| `price` | **Redundancy:** The price field is strictly validated as a `float` (number). Since it cannot contain text or HTML tags if validation passes, sanitisation is unnecessary. |

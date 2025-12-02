@@ -9,12 +9,12 @@ const redirectLogin = (req, res, next) => {
         next (); // move to the next middleware function
     } 
 }
-router.get('/search', redirectLogin, function(req, res, next){
+router.get('/search', function(req, res, next){
     res.render("search.ejs")
 });
 
 // Handle the search request
-router.get('/search-result', redirectLogin,
+router.get('/search-result',
     [check('keyword').notEmpty().isLength({ max: 50 })],
     function (req, res, next) {
     const errors = validationResult(req);
@@ -39,7 +39,7 @@ router.get('/search-result', redirectLogin,
      });
 });
 
-router.get('/list', redirectLogin, function(req, res, next) {
+router.get('/list', function(req, res, next) {
         let sqlquery = "SELECT * FROM books"; // query database to get all the books
         // execute sql query
         db.query(sqlquery, (err, result) => {

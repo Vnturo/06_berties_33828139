@@ -7,6 +7,7 @@ var mysql = require('mysql2');
 var session = require ('express-session')
 const expressSanitizer = require('express-sanitizer');
 const { check, validationResult } = require('express-validator');
+const apiRoutes = require('./routes/api');
 
 // Create the express application object
 const app = express()
@@ -26,6 +27,9 @@ app.use(express.static(path.join(__dirname, 'public')))
 
 // Define our application-specific data
 app.locals.shopData = {shopName: "Bertie's Books"}
+
+// Use the API routes
+app.use('/api', apiRoutes);
 
 // Define the database connection pool
 const db = mysql.createPool({

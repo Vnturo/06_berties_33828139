@@ -178,3 +178,21 @@ Sanitation was not applied in the passwords and price or else altering the input
 | :--- | :--- |
 | `password` | **Data Integrity & Security:** Passwords must allow special characters (e.g. `!`, `@`, `&`, `<`) to be strong. Sanitising a password would remove these characters, altering the string before it is hashed. This would cause login failures and weaken password complexity rules. |
 | `price` | **Redundancy:** The price field is strictly validated as a `float` (number). Since it cannot contain text or HTML tags if validation passes, sanitisation is unnecessary. |
+
+# Lab 9ab
+## API's
+
+In part A I created the Weather API where the user can see what the weather is like in any city which also says the humidity, windspeed, and description of the weather.
+I used the `request` node module to send HTTP GET requests to OvenWeatherMap
+I stored the API key in the `.env` file (`process.envWEATHER_API_KEY`) to prevent it from being exposed in the source code.
+I created a form in `weather.ejs` that allows the user to search any city name.
+For error handling i implemented checks to prevent crashing if a user enters a non-existent city it will display an error message instead of failing.
+
+## Part B
+
+| Feature | Method | Endpoint Example | Description |
+| :--- | :--- | :--- | :--- |
+| List All Books | `GET` | `/api/books` | Returns a list of all books in the database |
+| Search | `GET` | `/api/books?search=World` | Returns all books containing the search term in their title |
+| Price Filter | `GET` | `/api/books?minprice=10&maxprice=20` | Returns the books priced between the specified minimum and maximum values |
+| Sort | `GET` | `/api/books?sort=price` | Sorts the results by the specified column (`price` or `name`) |
